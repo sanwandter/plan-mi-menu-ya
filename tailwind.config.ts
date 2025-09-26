@@ -22,6 +22,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          soft: "hsl(var(--primary-soft))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -46,6 +47,24 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // Family app meal colors
+        breakfast: {
+          DEFAULT: "hsl(var(--breakfast))",
+          foreground: "hsl(var(--breakfast-foreground))",
+        },
+        lunch: {
+          DEFAULT: "hsl(var(--lunch))",
+          foreground: "hsl(var(--lunch-foreground))",
+        },
+        dinner: {
+          DEFAULT: "hsl(var(--dinner))",
+          foreground: "hsl(var(--dinner-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+          soft: "hsl(var(--success-soft))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

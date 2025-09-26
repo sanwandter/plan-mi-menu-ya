@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Plus, ShoppingCart } from "lucide-react";
+import { ShoppingCart, Calendar, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WeekCalendar } from "@/components/WeekCalendar";
 import { MealCard } from "@/components/MealCard";
 import { AddMealModal } from "@/components/AddMealModal";
 
@@ -16,6 +17,7 @@ export default function MealCalendar() {
   const [selectedMeals, setSelectedMeals] = useState<Record<string, any>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ day: number, mealType: string } | null>(null);
+  const [viewMode, setViewMode] = useState<'week' | 'list'>('week');
 
   // Generate 14 days starting from today
   const generateDays = () => {
@@ -70,52 +72,81 @@ export default function MealCalendar() {
               <h1 className="text-2xl font-bold text-foreground mb-1">Menú Semanal</h1>
               <p className="text-muted-foreground text-sm">Planifica las comidas de tu familia</p>
             </div>
-            <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-warm">
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              Generar Lista
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex bg-muted rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'week' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('week')}
+                  className="h-8"
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Semana
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-8"
+                >
+                  <List className="h-4 w-4 mr-1" />
+                  Lista
+                </Button>
+              </div>
+              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-warm">
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Generar Lista
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Calendar Grid */}
+      {/* Calendar Content */}
       <div className="px-4 py-6">
-        <div className="grid grid-cols-1 gap-4">
-          {days.map((day, dayIndex) => (
-            <div key={dayIndex} className="bg-card rounded-xl shadow-card border border-border overflow-hidden">
-              {/* Day Header */}
-              <div className="bg-gradient-to-r from-primary/10 to-accent/20 px-4 py-3 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground capitalize">
-                      {day.dayName}
-                    </p>
-                    <p className="text-lg font-bold text-foreground">
-                      {day.dayNumber} {day.month}
-                    </p>
+        {viewMode === 'week' ? (
+          <WeekCalendar
+            selectedMeals={selectedMeals}
+            onAddMeal={handleAddMeal}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {days.map((day, dayIndex) => (
+              <div key={dayIndex} className="bg-card rounded-xl shadow-card border border-border overflow-hidden animate-fade-in">
+                {/* Day Header */}
+                <div className="bg-gradient-to-r from-primary/10 to-accent/20 px-4 py-3 border-b border-border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground capitalize">
+                        {day.dayName}
+                      </p>
+                      <p className="text-lg font-bold text-foreground">
+                        {day.dayNumber} {day.month}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Meals */}
-              <div className="p-4 space-y-3">
-                {mealTypes.map((mealType) => {
-                  const key = `${dayIndex}-${mealType.key}`;
-                  const selectedMeal = selectedMeals[key];
+                {/* Meals */}
+                <div className="p-4 space-y-3">
+                  {mealTypes.map((mealType) => {
+                    const key = `${dayIndex}-${mealType.key}`;
+                    const selectedMeal = selectedMeals[key];
 
-                  return (
-                    <MealCard
-                      key={mealType.key}
-                      mealType={mealType}
-                      meal={selectedMeal}
-                      onAddMeal={() => handleAddMeal(dayIndex, mealType.key)}
-                    />
-                  );
-                })}
+                    return (
+                      <MealCard
+                        key={mealType.key}
+                        mealType={mealType}
+                        meal={selectedMeal}
+                        onAddMeal={() => handleAddMeal(dayIndex, mealType.key)}
+                      />
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <AddMealModal

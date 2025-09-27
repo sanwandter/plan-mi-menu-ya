@@ -31,7 +31,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '1',
     name: 'Lentejas con verduras',
-    image: '/src/assets/lentejas-verduras.jpg',
+    image: '/images/lentejas-verduras.jpg',
     category: 'lunch',
     servings: 4,
     ingredients: [
@@ -45,7 +45,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '2',
     name: 'Tostadas con palta',
-    image: '/src/assets/tostadas-palta.jpg',
+    image: '/images/tostadas-palta.jpg',
     category: 'breakfast',
     servings: 2,
     ingredients: [
@@ -59,7 +59,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '3',
     name: 'Pollo al horno',
-    image: '/src/assets/pollo-horno.jpg',
+    image: '/images/pollo-horno.jpg',
     category: 'dinner',
     servings: 4,
     ingredients: [
@@ -74,7 +74,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '4',
     name: 'Ensalada fresca',
-    image: '/src/assets/ensalada-fresca.jpg',
+    image: '/images/ensalada-fresca.jpg',
     category: 'lunch',
     servings: 2,
     ingredients: [
@@ -89,7 +89,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '5',
     name: 'Pancakes integrales',
-    image: '/src/assets/pancakes-integrales.jpg',
+    image: '/images/pancakes-integrales.jpg',
     category: 'breakfast',
     servings: 3,
     ingredients: [
@@ -104,7 +104,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '6',
     name: 'Salmón a la plancha',
-    image: '/src/assets/salmon-plancha.jpg',
+    image: '/images/salmon-plancha.jpg',
     category: 'dinner',
     servings: 2,
     ingredients: [

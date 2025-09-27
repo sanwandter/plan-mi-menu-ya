@@ -4,17 +4,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { useAppContext } from "@/context/AppContext";
+import { Recipe } from "@/types";
 
 export default function Recipes() {
   const { state, dispatch } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewRecipeForm, setShowNewRecipeForm] = useState(false);
+  const [recipeToEdit, setRecipeToEdit] = useState<Recipe | undefined>(undefined);
 
   const filteredRecipes = state.recipes.filter(recipe =>
     recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleEditRecipe = (recipe: Recipe) => {
+    setRecipeToEdit(recipe);
+    setShowNewRecipeForm(true);
+  };
+
+  const handleDeleteRecipe = (recipeId: string) => {
+    dispatch({ type: 'DELETE_RECIPE', payload: recipeId });
+  };
+
+  const handleCloseModal = () => {
+    setShowNewRecipeForm(false);
+    setRecipeToEdit(undefined);
+  };
 
   const getCategoryLabel = (category: 'breakfast' | 'lunch' | 'dinner') => {
     const labels = {
@@ -55,7 +72,10 @@ export default function Recipes() {
             />
           </div>
           <Button 
-            onClick={() => setShowNewRecipeForm(true)}
+            onClick={() => {
+              setRecipeToEdit(undefined);
+              setShowNewRecipeForm(true);
+            }}
             className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -79,7 +99,10 @@ export default function Recipes() {
               {!searchTerm && (
                 <Button 
                   variant="outline"
-                  onClick={() => setShowNewRecipeForm(true)}
+                  onClick={() => {
+                    setRecipeToEdit(undefined);
+                    setShowNewRecipeForm(true);
+                  }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Crear primera receta
@@ -106,16 +129,41 @@ export default function Recipes() {
                         size="sm"
                         variant="outline"
                         className="bg-white/90 hover:bg-white"
+                        onClick={() => handleEditRecipe(recipe)}
+                        title="Editar receta"
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white/90 hover:bg-white text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-white/90 hover:bg-white text-red-600 hover:text-red-700"
+                            title="Eliminar receta"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar receta?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              ¿Estás seguro de que quieres eliminar la receta "{recipe.name}"? 
+                              Esta acción no se puede deshacer.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteRecipe(recipe.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </div>
@@ -174,10 +222,11 @@ export default function Recipes() {
           )}
         </div>
 
-        {/* New Recipe Form Modal - Placeholder */}
+        {/* Recipe Form Modal */}
         <AddRecipeModal
           isOpen={showNewRecipeForm}
-          onClose={() => setShowNewRecipeForm(false)}
+          onClose={handleCloseModal}
+          recipeToEdit={recipeToEdit}
         />
       </div>
     </div>

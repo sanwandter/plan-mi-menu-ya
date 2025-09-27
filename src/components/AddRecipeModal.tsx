@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, X, Minus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,10 @@ import { Recipe, Ingredient, MealCategory, IngredientCategory } from "@/types";
 interface AddRecipeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  recipeToEdit?: Recipe;
 }
 
-export function AddRecipeModal({ isOpen, onClose }: AddRecipeModalProps) {
+export function AddRecipeModal({ isOpen, onClose, recipeToEdit }: AddRecipeModalProps) {
   const { dispatch } = useAppContext();
   
   const [formData, setFormData] = useState({
@@ -31,6 +32,30 @@ export function AddRecipeModal({ isOpen, onClose }: AddRecipeModalProps) {
 
   const [currentTag, setCurrentTag] = useState('');
 
+  // Cargar datos de la receta a editar
+  useEffect(() => {
+    if (recipeToEdit && isOpen) {
+      setFormData({
+        name: recipeToEdit.name,
+        category: recipeToEdit.category,
+        servings: recipeToEdit.servings,
+        image: recipeToEdit.image || '',
+        tags: recipeToEdit.tags || []
+      });
+      setIngredients(recipeToEdit.ingredients.map(({ id, ...rest }) => rest));
+    } else if (isOpen) {
+      // Reset form when opening for new recipe
+      setFormData({
+        name: '',
+        category: '' as MealCategory,
+        servings: 4,
+        image: '',
+        tags: []
+      });
+      setIngredients([{ name: '', amount: 0, unit: '', category: 'otros' }]);
+    }
+  }, [recipeToEdit, isOpen]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -39,20 +64,38 @@ export function AddRecipeModal({ isOpen, onClose }: AddRecipeModalProps) {
       return;
     }
 
-    const newRecipe: Recipe = {
-      id: Date.now().toString(),
-      name: formData.name,
-      category: formData.category,
-      servings: formData.servings,
-      image: formData.image,
-      tags: formData.tags,
-      ingredients: ingredients.map((ing, index) => ({
-        ...ing,
-        id: `${Date.now()}-${index}`
-      }))
-    };
-
-    dispatch({ type: 'ADD_RECIPE', payload: newRecipe });
+    if (recipeToEdit) {
+      // Actualizar receta existente
+      const updatedRecipe: Recipe = {
+        ...recipeToEdit,
+        name: formData.name,
+        category: formData.category,
+        servings: formData.servings,
+        image: formData.image,
+        tags: formData.tags,
+        ingredients: ingredients.map((ing, index) => ({
+          ...ing,
+          id: recipeToEdit.ingredients[index]?.id || `${Date.now()}-${index}`
+        }))
+      };
+      dispatch({ type: 'UPDATE_RECIPE', payload: updatedRecipe });
+    } else {
+      // Crear nueva receta
+      const newRecipe: Recipe = {
+        id: Date.now().toString(),
+        name: formData.name,
+        category: formData.category,
+        servings: formData.servings,
+        image: formData.image,
+        tags: formData.tags,
+        ingredients: ingredients.map((ing, index) => ({
+          ...ing,
+          id: `${Date.now()}-${index}`
+        }))
+      };
+      dispatch({ type: 'ADD_RECIPE', payload: newRecipe });
+    }
+    
     handleClose();
   };
 
@@ -107,7 +150,7 @@ export function AddRecipeModal({ isOpen, onClose }: AddRecipeModalProps) {
       <DialogContent className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg max-h-[90vh] overflow-y-auto [&>[data-radix-dialog-close]]:top-4 [&>[data-radix-dialog-close]]:right-4 [&>[data-radix-dialog-close]]:bg-white [&>[data-radix-dialog-close]]:shadow-sm [&>[data-radix-dialog-close]]:border [&>[data-radix-dialog-close]]:z-50">
         <DialogHeader className="pb-4 border-b bg-white relative">
           <DialogTitle className="text-2xl font-bold text-gray-900 pr-8">
-            Crear Nueva Receta
+            {recipeToEdit ? 'Editar Receta' : 'Crear Nueva Receta'}
           </DialogTitle>
         </DialogHeader>
 
@@ -176,12 +219,12 @@ export function AddRecipeModal({ isOpen, onClose }: AddRecipeModalProps) {
               </div>
 
               <div>
-                <Label>Etiquetas</Label>
+                <Label>Etiquetas (opcional)</Label>
                 <div className="flex gap-2 mb-2">
                   <Input
                     value={currentTag}
                     onChange={(e) => setCurrentTag(e.target.value)}
-                    placeholder="Agregar etiqueta"
+                    placeholder="Ej: saludable, rápido, vegetariano"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                   />
                   <Button type="button" onClick={addTag} size="sm">
@@ -224,14 +267,41 @@ export function AddRecipeModal({ isOpen, onClose }: AddRecipeModalProps) {
                     />
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={ingredient.amount || ''}
-                      onChange={(e) => updateIngredient(index, 'amount', parseFloat(e.target.value) || 0)}
-                      placeholder="Cantidad"
-                      required
-                    />
+                    <div className="flex items-center border border-gray-200 rounded-md">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const newAmount = Math.max(0, (ingredient.amount || 0) - 1);
+                          updateIngredient(index, 'amount', newAmount);
+                        }}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 rounded-none border-0"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={ingredient.amount || ''}
+                        onChange={(e) => updateIngredient(index, 'amount', parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                        required
+                        className="text-center border-0 focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const newAmount = (ingredient.amount || 0) + 1;
+                          updateIngredient(index, 'amount', newAmount);
+                        }}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 rounded-none border-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="col-span-2">
                     <Input
@@ -289,7 +359,7 @@ export function AddRecipeModal({ isOpen, onClose }: AddRecipeModalProps) {
               type="submit"
               className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
             >
-              Crear Receta
+              {recipeToEdit ? 'Actualizar Receta' : 'Crear Receta'}
             </Button>
           </div>
         </form>

@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { Recipe, CalendarMeal, ShoppingListItem, IngredientCategory } from '@/types';
+import { 
+  lentejasVerduras,
+  tostadasPalta,
+  polloHorno,
+  ensaladaFresca,
+  pancakesIntegrales,
+  salmonPlancha
+} from '@/assets/images';
 
 interface AppState {
   recipes: Recipe[];
@@ -31,7 +39,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '1',
     name: 'Lentejas con verduras',
-    image: '/images/lentejas-verduras.jpg',
+    image: lentejasVerduras,
     category: 'lunch',
     servings: 4,
     ingredients: [
@@ -45,7 +53,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '2',
     name: 'Tostadas con palta',
-    image: '/images/tostadas-palta.jpg',
+    image: tostadasPalta,
     category: 'breakfast',
     servings: 2,
     ingredients: [
@@ -59,7 +67,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '3',
     name: 'Pollo al horno',
-    image: '/images/pollo-horno.jpg',
+    image: polloHorno,
     category: 'dinner',
     servings: 4,
     ingredients: [
@@ -74,7 +82,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '4',
     name: 'Ensalada fresca',
-    image: '/images/ensalada-fresca.jpg',
+    image: ensaladaFresca,
     category: 'lunch',
     servings: 2,
     ingredients: [
@@ -89,7 +97,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '5',
     name: 'Pancakes integrales',
-    image: '/images/pancakes-integrales.jpg',
+    image: pancakesIntegrales,
     category: 'breakfast',
     servings: 3,
     ingredients: [
@@ -104,7 +112,7 @@ const initialRecipes: Recipe[] = [
   {
     id: '6',
     name: 'Salmón a la plancha',
-    image: '/images/salmon-plancha.jpg',
+    image: salmonPlancha,
     category: 'dinner',
     servings: 2,
     ingredients: [

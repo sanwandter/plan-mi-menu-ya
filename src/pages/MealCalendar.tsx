@@ -1,159 +1,298 @@
-import { useState } from "react";
-import { ShoppingCart, Calendar, List } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, ShoppingCart, Calendar as CalendarIcon, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WeekCalendar } from "@/components/WeekCalendar";
-import { MealCard } from "@/components/MealCard";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { AddMealModal } from "@/components/AddMealModal";
-
-// Mock data for demonstration
-const mockRecipes = [
-  { id: 1, name: "Lentejas con verduras", image: "/src/assets/lentejas-verduras.jpg", category: "lunch" },
-  { id: 2, name: "Tostadas con palta", image: "/src/assets/tostadas-palta.jpg", category: "breakfast" },
-  { id: 3, name: "Pollo al horno", image: "/src/assets/pollo-horno.jpg", category: "dinner" },
-  { id: 4, name: "Ensalada fresca", image: "/src/assets/ensalada-fresca.jpg", category: "lunch" },
-];
+import { useAppContext } from "@/context/AppContext";
+import { format, addDays, startOfDay, isSameDay } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function MealCalendar() {
-  const [selectedMeals, setSelectedMeals] = useState<Record<string, any>>({});
+  const { state, dispatch } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{ day: number, mealType: string } | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{ 
+    day: string, 
+    mealType: 'breakfast' | 'lunch' | 'dinner' 
+  } | null>(null);
   const [viewMode, setViewMode] = useState<'week' | 'list'>('week');
 
-  // Generate 14 days starting from today
-  const generateDays = () => {
+  // Generar 14 días comenzando desde hoy
+  const weekDays = useMemo(() => {
+    const today = startOfDay(new Date());
     const days = [];
-    const today = new Date();
     
     for (let i = 0; i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
+      const date = addDays(today, i);
+      const dayKey = format(date, 'yyyy-MM-dd');
+      const dayMeals = state.calendar[dayKey] || {};
+      
       days.push({
-        date: date,
-        dayName: date.toLocaleDateString('es-ES', { weekday: 'short' }),
-        dayNumber: date.getDate(),
-        month: date.toLocaleDateString('es-ES', { month: 'short' }),
+        date,
+        dayKey,
+        dayName: format(date, 'EEEE', { locale: es }),
+        dayNumber: format(date, 'd'),
+        month: format(date, 'MMM', { locale: es }),
+        isToday: isSameDay(date, today),
+        week: i < 7 ? 1 : 2,
+        meals: {
+          breakfast: dayMeals.breakfast ? state.recipes.find(r => r.id === dayMeals.breakfast) : undefined,
+          lunch: dayMeals.lunch ? state.recipes.find(r => r.id === dayMeals.lunch) : undefined,
+          dinner: dayMeals.dinner ? state.recipes.find(r => r.id === dayMeals.dinner) : undefined,
+        }
       });
     }
     
     return days;
-  };
+  }, [state.calendar, state.recipes]);
 
-  const days = generateDays();
-  const mealTypes = [
-    { key: 'breakfast', label: 'Desayuno', color: 'breakfast' },
-    { key: 'lunch', label: 'Almuerzo', color: 'lunch' },
-    { key: 'dinner', label: 'Cena', color: 'dinner' },
-  ];
+  const currentWeekDays = weekDays.filter(day => 
+    state.currentWeek === 0 ? day.week === 1 : day.week === 2
+  );
 
-  const handleAddMeal = (day: number, mealType: string) => {
+  const handleAddMeal = (day: string, mealType: 'breakfast' | 'lunch' | 'dinner') => {
     setSelectedSlot({ day, mealType });
     setIsModalOpen(true);
   };
 
-  const handleSelectRecipe = (recipe: any) => {
+  const handleMealSelected = (recipeId: string) => {
     if (selectedSlot) {
-      const key = `${selectedSlot.day}-${selectedSlot.mealType}`;
-      setSelectedMeals(prev => ({
-        ...prev,
-        [key]: recipe
-      }));
+      dispatch({
+        type: 'SET_MEAL',
+        payload: {
+          day: selectedSlot.day,
+          mealType: selectedSlot.mealType,
+          recipeId
+        }
+      });
     }
     setIsModalOpen(false);
     setSelectedSlot(null);
   };
 
+  const handleGenerateShoppingList = () => {
+    dispatch({ type: 'GENERATE_SHOPPING_LIST' });
+  };
+
+  const getMealTypeLabel = (mealType: 'breakfast' | 'lunch' | 'dinner') => {
+    const labels = {
+      breakfast: 'Desayuno',
+      lunch: 'Almuerzo', 
+      dinner: 'Cena'
+    };
+    return labels[mealType];
+  };
+
+  const getMealTypeEmoji = (mealType: 'breakfast' | 'lunch' | 'dinner') => {
+    const emojis = {
+      breakfast: '🌅',
+      lunch: '☀️',
+      dinner: '🌙'
+    };
+    return emojis[mealType];
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-primary-soft/20">
-      {/* Header */}
-      <div className="bg-card shadow-soft">
-        <div className="px-6 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground mb-1">Menú Semanal</h1>
-              <p className="text-muted-foreground text-sm">Planifica las comidas de tu familia</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex bg-muted rounded-lg p-1">
-                <Button
-                  variant={viewMode === 'week' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('week')}
-                  className="h-8"
-                >
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Semana
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="h-8"
-                >
-                  <List className="h-4 w-4 mr-1" />
-                  Lista
-                </Button>
-              </div>
-              <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-warm">
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Generar Lista
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Menú Semanal</h1>
+          <p className="text-gray-600">Planifica las comidas de tu familia para las próximas 2 semanas</p>
+        </div>
+
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex gap-2">
+            <Button
+              variant={state.currentWeek === 0 ? "default" : "outline"}
+              onClick={() => dispatch({ type: 'SET_CURRENT_WEEK', payload: 0 })}
+            >
+              Semana 1
+            </Button>
+            <Button
+              variant={state.currentWeek === 1 ? "default" : "outline"}
+              onClick={() => dispatch({ type: 'SET_CURRENT_WEEK', payload: 1 })}
+            >
+              Semana 2
+            </Button>
+          </div>
+          
+          <div className="flex gap-2 ml-auto">
+            <Button
+              variant={viewMode === 'week' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode('week')}
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Calendario
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4 mr-2" />
+              Lista
+            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Calendar Content */}
-      <div className="px-4 py-6">
-        {viewMode === 'week' ? (
-          <WeekCalendar
-            selectedMeals={selectedMeals}
-            onAddMeal={handleAddMeal}
-          />
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {days.map((day, dayIndex) => (
-              <div key={dayIndex} className="bg-card rounded-xl shadow-card border border-border overflow-hidden animate-fade-in">
-                {/* Day Header */}
-                <div className="bg-gradient-to-r from-primary/10 to-accent/20 px-4 py-3 border-b border-border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground capitalize">
+        {/* Calendar View */}
+        {viewMode === 'week' && (
+          <div className="grid grid-cols-7 gap-2 mb-6">
+            {currentWeekDays.map((day) => (
+              <Card 
+                key={day.dayKey} 
+                className={`overflow-hidden transition-all duration-200 hover:shadow-lg ${
+                  day.isToday ? 'ring-2 ring-orange-400 bg-orange-50' : 'bg-white'
+                }`}
+              >
+                <div className="p-2 bg-gradient-to-r from-orange-100 to-red-100">
+                  <div className="flex justify-between items-center">
+                    <div className="text-center">
+                      <p className="text-xs font-medium text-gray-700 capitalize">
                         {day.dayName}
                       </p>
-                      <p className="text-lg font-bold text-foreground">
-                        {day.dayNumber} {day.month}
+                      <p className="text-sm font-bold text-gray-900">
+                        {day.dayNumber}
                       </p>
                     </div>
+                    {day.isToday && (
+                      <Badge variant="secondary" className="bg-orange-200 text-orange-800 text-xs px-1 py-0">
+                        Hoy
+                      </Badge>
+                    )}
                   </div>
                 </div>
-
-                {/* Meals */}
-                <div className="p-4 space-y-3">
-                  {mealTypes.map((mealType) => {
-                    const key = `${dayIndex}-${mealType.key}`;
-                    const selectedMeal = selectedMeals[key];
-
-                    return (
-                      <MealCard
-                        key={mealType.key}
-                        mealType={mealType}
-                        meal={selectedMeal}
-                        onAddMeal={() => handleAddMeal(dayIndex, mealType.key)}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
+                
+                <CardContent className="p-2 space-y-1">
+                  {(['breakfast', 'lunch', 'dinner'] as const).map((mealType) => (
+                    <div key={mealType} className="border rounded p-1 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-medium text-gray-600">
+                          {getMealTypeEmoji(mealType)}
+                        </span>
+                      </div>
+                      
+                      {day.meals[mealType] ? (
+                        <div 
+                          className="cursor-pointer group"
+                          onClick={() => handleAddMeal(day.dayKey, mealType)}
+                        >
+                          <div className="flex items-center gap-1">
+                            {day.meals[mealType]?.image && (
+                              <img
+                                src={day.meals[mealType]!.image}
+                                alt={day.meals[mealType]!.name}
+                                className="w-6 h-6 rounded object-cover"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-900 group-hover:text-orange-600 transition-colors truncate">
+                                {day.meals[mealType]!.name}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleAddMeal(day.dayKey, mealType)}
+                          className="w-full border-2 border-dashed border-gray-300 rounded p-1 text-gray-400 hover:border-orange-400 hover:text-orange-600 transition-colors"
+                        >
+                          <Plus className="h-3 w-3 mx-auto" />
+                          <p className="text-xs mt-1">Agregar</p>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
+
+        {/* List View */}
+        {viewMode === 'list' && (
+          <div className="space-y-4 mb-6">
+            {currentWeekDays.map((day) => (
+              <Card key={day.dayKey} className="overflow-hidden">
+                <div className="p-4 bg-gradient-to-r from-orange-100 to-red-100">
+                  <h3 className="font-bold text-lg text-gray-900 capitalize">
+                    {day.dayName} {day.dayNumber} de {day.month}
+                    {day.isToday && <Badge className="ml-2 bg-orange-600">Hoy</Badge>}
+                  </h3>
+                </div>
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(['breakfast', 'lunch', 'dinner'] as const).map((mealType) => (
+                      <div key={mealType} className="border rounded-lg p-3">
+                        <h4 className="font-medium text-gray-700 mb-2">
+                          {getMealTypeEmoji(mealType)} {getMealTypeLabel(mealType)}
+                        </h4>
+                        {day.meals[mealType] ? (
+                          <div 
+                            className="cursor-pointer group"
+                            onClick={() => handleAddMeal(day.dayKey, mealType)}
+                          >
+                            <div className="flex items-center gap-3">
+                              {day.meals[mealType]?.image && (
+                                <img
+                                  src={day.meals[mealType]!.image}
+                                  alt={day.meals[mealType]!.name}
+                                  className="w-12 h-12 rounded object-cover"
+                                />
+                              )}
+                              <div>
+                                <p className="font-medium text-gray-900 group-hover:text-orange-600 transition-colors">
+                                  {day.meals[mealType]!.name}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {day.meals[mealType]!.servings} porciones
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleAddMeal(day.dayKey, mealType)}
+                            className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-400 hover:border-orange-400 hover:text-orange-600 transition-colors"
+                          >
+                            <Plus className="h-5 w-5 mx-auto mb-1" />
+                            <p className="text-sm">Agregar plato</p>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Generate Shopping List Button */}
+        <div className="fixed bottom-6 right-6">
+          <Button
+            onClick={handleGenerateShoppingList}
+            size="lg"
+            className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 shadow-lg"
+          >
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            Generar Lista de Compras
+          </Button>
+        </div>
       </div>
 
+      {/* Modal para agregar comida */}
       <AddMealModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSelectRecipe={handleSelectRecipe}
-        recipes={mockRecipes}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedSlot(null);
+        }}
+        onMealSelected={handleMealSelected}
+        selectedSlot={selectedSlot}
       />
     </div>
   );

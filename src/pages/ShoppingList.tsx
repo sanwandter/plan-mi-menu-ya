@@ -1,166 +1,256 @@
-import { useState } from "react";
-import { Share2, Check } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Share2, Check, RotateCcw, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-
-// Mock shopping list data
-const mockShoppingList = [
-  {
-    category: "Verduras y Frutas",
-    items: [
-      { id: 1, name: "Tomates", quantity: "500g", checked: false },
-      { id: 2, name: "Cebollas", quantity: "2 unidades", checked: false },
-      { id: 3, name: "Palta", quantity: "3 unidades", checked: true },
-      { id: 4, name: "Lechuga", quantity: "1 unidad", checked: false },
-    ]
-  },
-  {
-    category: "Carnes y Pescados",
-    items: [
-      { id: 5, name: "Pollo entero", quantity: "1.5kg", checked: false },
-      { id: 6, name: "Carne molida", quantity: "500g", checked: false },
-    ]
-  },
-  {
-    category: "Lácteos",
-    items: [
-      { id: 7, name: "Leche entera", quantity: "1 litro", checked: true },
-      { id: 8, name: "Queso fresco", quantity: "200g", checked: false },
-      { id: 9, name: "Yogur natural", quantity: "4 unidades", checked: false },
-    ]
-  },
-  {
-    category: "Despensa",
-    items: [
-      { id: 10, name: "Lentejas", quantity: "500g", checked: false },
-      { id: 11, name: "Arroz", quantity: "1kg", checked: false },
-      { id: 12, name: "Aceite de oliva", quantity: "500ml", checked: true },
-    ]
-  },
-];
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useAppContext } from "@/context/AppContext";
+import { IngredientCategory } from "@/types";
 
 export default function ShoppingList() {
-  const [shoppingList, setShoppingList] = useState(mockShoppingList);
+  const { state, dispatch } = useAppContext();
 
-  const handleToggleItem = (categoryIndex: number, itemId: number) => {
-    setShoppingList(prev =>
-      prev.map((category, idx) =>
-        idx === categoryIndex
-          ? {
-              ...category,
-              items: category.items.map(item =>
-                item.id === itemId ? { ...item, checked: !item.checked } : item
-              )
-            }
-          : category
-      )
-    );
+  // Agrupar los items por categoría
+  const groupedItems = useMemo(() => {
+    const groups: Record<IngredientCategory, typeof state.shoppingList> = {
+      verduras: [],
+      frutas: [],
+      carnes: [],
+      pescados: [],
+      lacteos: [],
+      cereales: [],
+      legumbres: [],
+      despensa: [],
+      condimentos: [],
+      otros: []
+    };
+
+    state.shoppingList.forEach(item => {
+      groups[item.category].push(item);
+    });
+
+    // Filtrar grupos vacíos
+    return Object.entries(groups)
+      .filter(([_, items]) => items.length > 0)
+      .map(([category, items]) => ({
+        category: category as IngredientCategory,
+        items
+      }));
+  }, [state.shoppingList]);
+
+  const getCategoryLabel = (category: IngredientCategory) => {
+    const labels: Record<IngredientCategory, string> = {
+      verduras: 'Verduras',
+      frutas: 'Frutas',
+      carnes: 'Carnes',
+      pescados: 'Pescados y Mariscos',
+      lacteos: 'Lácteos y Huevos',
+      cereales: 'Cereales y Panes',
+      legumbres: 'Legumbres',
+      despensa: 'Despensa',
+      condimentos: 'Condimentos y Especias',
+      otros: 'Otros'
+    };
+    return labels[category];
+  };
+
+  const getCategoryEmoji = (category: IngredientCategory) => {
+    const emojis: Record<IngredientCategory, string> = {
+      verduras: '🥕',
+      frutas: '🍎',
+      carnes: '🥩',
+      pescados: '🐟',
+      lacteos: '🥛',
+      cereales: '🍞',
+      legumbres: '🫘',
+      despensa: '🥫',
+      condimentos: '🧂',
+      otros: '🛒'
+    };
+    return emojis[category];
+  };
+
+  const handleToggleItem = (itemId: string) => {
+    dispatch({ type: 'TOGGLE_SHOPPING_ITEM', payload: itemId });
   };
 
   const handleShare = () => {
-    // Simulated share functionality
-    alert("Compartir lista de compras");
+    const uncheckedItems = state.shoppingList.filter(item => !item.checked);
+    const checkedItems = state.shoppingList.filter(item => item.checked);
+    
+    let shareText = '🛒 Lista de Compras - Menú Familiar\n\n';
+    
+    if (uncheckedItems.length > 0) {
+      shareText += '📋 PENDIENTES:\n';
+      uncheckedItems.forEach(item => {
+        shareText += `• ${item.name} - ${item.amount} ${item.unit}\n`;
+      });
+      shareText += '\n';
+    }
+    
+    if (checkedItems.length > 0) {
+      shareText += '✅ COMPLETADOS:\n';
+      checkedItems.forEach(item => {
+        shareText += `• ${item.name} - ${item.amount} ${item.unit}\n`;
+      });
+    }
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Lista de Compras - Menú Familiar',
+        text: shareText
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      // Mostrar un toast o mensaje de confirmación
+      alert('Lista copiada al portapapeles');
+    }
   };
 
-  const getTotalItems = () => {
-    return shoppingList.reduce((total, category) => total + category.items.length, 0);
+  const handleRegenerate = () => {
+    dispatch({ type: 'GENERATE_SHOPPING_LIST' });
   };
 
-  const getCheckedItems = () => {
-    return shoppingList.reduce((total, category) => 
-      total + category.items.filter(item => item.checked).length, 0
-    );
-  };
+  const totalItems = state.shoppingList.length;
+  const checkedItems = state.shoppingList.filter(item => item.checked).length;
+  const progress = totalItems > 0 ? (checkedItems / totalItems) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-success-soft/20">
-      {/* Header */}
-      <div className="bg-card shadow-soft">
-        <div className="px-6 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground mb-1">Lista de Compras</h1>
-              <p className="text-muted-foreground text-sm">
-                {getCheckedItems()} de {getTotalItems()} elementos completados
-              </p>
-            </div>
-            <Button 
-              onClick={handleShare}
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              <Share2 className="h-5 w-5 mr-2" />
-              Compartir
-            </Button>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="w-full bg-muted rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-success to-success/80 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${(getCheckedItems() / getTotalItems()) * 100}%` }}
-            />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Lista de Compras</h1>
+          <p className="text-gray-600">
+            Generada automáticamente desde tu menú semanal
+          </p>
         </div>
-      </div>
 
-      {/* Shopping List */}
-      <div className="px-4 py-6 space-y-6">
-        {shoppingList.map((category, categoryIndex) => (
-          <div key={category.category} className="bg-card rounded-xl shadow-card border border-border">
-            <div className="bg-gradient-to-r from-primary/10 to-success/10 px-4 py-3 border-b border-border rounded-t-xl">
-              <h2 className="text-lg font-semibold text-foreground">{category.category}</h2>
-            </div>
-            
-            <div className="p-4 space-y-3">
-              {category.items.map((item) => (
-                <div
-                  key={item.id}
-                  className={`flex items-center space-x-3 p-3 rounded-lg border transition-all duration-300 ${
-                    item.checked 
-                      ? 'bg-success-soft/50 border-success/30' 
-                      : 'bg-background border-border hover:bg-muted/50'
-                  }`}
-                >
-                  <Checkbox
-                    id={`item-${item.id}`}
-                    checked={item.checked}
-                    onCheckedChange={() => handleToggleItem(categoryIndex, item.id)}
-                    className="data-[state=checked]:bg-success data-[state=checked]:border-success"
-                  />
-                  
-                  <div className="flex-1 flex items-center justify-between">
-                    <label
-                      htmlFor={`item-${item.id}`}
-                      className={`text-sm font-medium cursor-pointer transition-all duration-300 ${
-                        item.checked 
-                          ? 'text-muted-foreground line-through' 
-                          : 'text-foreground'
-                      }`}
-                    >
-                      {item.name}
-                    </label>
-                    <span
-                      className={`text-xs transition-all duration-300 ${
-                        item.checked 
-                          ? 'text-muted-foreground line-through' 
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {item.quantity}
-                    </span>
+        {/* Progress and Actions */}
+        <div className="mb-6">
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-4 mb-2">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Progreso: {checkedItems} de {totalItems} items
+                    </h2>
+                    <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                      {Math.round(progress)}% completado
+                    </Badge>
                   </div>
-
-                  {item.checked && (
-                    <div className="flex items-center justify-center w-6 h-6 bg-success rounded-full">
-                      <Check className="h-4 w-4 text-success-foreground" />
-                    </div>
-                  )}
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleRegenerate}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Regenerar
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Compartir
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Shopping List */}
+        {state.shoppingList.length === 0 ? (
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-8 text-center">
+              <ShoppingCart className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Lista de compras vacía
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Agrega platos a tu calendario para generar automáticamente tu lista de compras
+              </p>
+              <Button 
+                onClick={handleRegenerate}
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Generar Lista
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {groupedItems.map(({ category, items }) => (
+              <Card key={category} className="bg-white shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <span className="text-2xl">{getCategoryEmoji(category)}</span>
+                    {getCategoryLabel(category)}
+                    <Badge variant="outline" className="ml-auto">
+                      {items.length} items
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    {items.map((item) => (
+                      <div 
+                        key={item.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
+                          item.checked 
+                            ? 'bg-gray-50 border-gray-200' 
+                            : 'bg-white border-gray-200 hover:border-orange-300'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={item.checked}
+                          onCheckedChange={() => handleToggleItem(item.id)}
+                          className="data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600"
+                        />
+                        <div className="flex-1">
+                          <p className={`font-medium ${
+                            item.checked 
+                              ? 'text-gray-500 line-through' 
+                              : 'text-gray-900'
+                          }`}>
+                            {item.name}
+                          </p>
+                          <p className={`text-sm ${
+                            item.checked 
+                              ? 'text-gray-400' 
+                              : 'text-gray-600'
+                          }`}>
+                            {item.amount} {item.unit}
+                          </p>
+                          {item.recipeNames.length > 0 && (
+                            <p className="text-xs text-orange-600 mt-1">
+                              Para: {item.recipeNames.join(', ')}
+                            </p>
+                          )}
+                        </div>
+                        {item.checked && (
+                          <Check className="h-5 w-5 text-green-600" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

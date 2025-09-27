@@ -13,7 +13,7 @@ export function BottomNavigation() {
     {
       to: "/lista-compras",
       icon: ShoppingCart,
-      label: "Lista",
+      label: "Compras",
     },
     {
       to: "/recetas",
@@ -23,22 +23,31 @@ export function BottomNavigation() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg">
-      <div className="flex justify-around items-center py-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+      <div className="flex justify-around items-center py-2 px-4">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
+          const Icon = item.icon;
           return (
             <NavLink
               key={item.to}
               to={item.to}
-              className={`flex flex-col items-center py-2 px-4 rounded-lg transition-all duration-300 ${
-                isActive
-                  ? "text-primary bg-primary-soft"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              className={`flex flex-col items-center py-2 px-4 rounded-lg transition-colors duration-200 min-w-0 flex-1 ${
+                isActive 
+                  ? 'text-orange-600 bg-orange-50' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <item.icon className={`h-6 w-6 ${isActive ? "scale-110" : ""}`} />
-              <span className="text-xs mt-1 font-medium">{item.label}</span>
+              <Icon 
+                className={`h-6 w-6 mb-1 ${
+                  isActive ? 'text-orange-600' : 'text-gray-500'
+                }`} 
+              />
+              <span className={`text-xs font-medium ${
+                isActive ? 'text-orange-600' : 'text-gray-500'
+              }`}>
+                {item.label}
+              </span>
             </NavLink>
           );
         })}

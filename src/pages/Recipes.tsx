@@ -1,163 +1,184 @@
 import { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Clock, Users, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// Mock recipes data
-const mockRecipes = [
-  {
-    id: 1,
-    name: "Lentejas con verduras",
-    image: "/src/assets/lentejas-verduras.jpg",
-    category: "Almuerzo",
-    prepTime: "45 min",
-  },
-  {
-    id: 2,
-    name: "Tostadas con palta",
-    image: "/src/assets/tostadas-palta.jpg",
-    category: "Desayuno",
-    prepTime: "10 min",
-  },
-  {
-    id: 3,
-    name: "Pollo al horno",
-    image: "/src/assets/pollo-horno.jpg",
-    category: "Cena",
-    prepTime: "60 min",
-  },
-  {
-    id: 4,
-    name: "Ensalada fresca",
-    image: "/src/assets/ensalada-fresca.jpg",
-    category: "Almuerzo",
-    prepTime: "15 min",
-  },
-  {
-    id: 5,
-    name: "Pancakes integrales",
-    image: "/src/assets/pancakes-integrales.jpg",
-    category: "Desayuno",
-    prepTime: "20 min",
-  },
-  {
-    id: 6,
-    name: "Salmón a la plancha",
-    image: "/src/assets/salmon-plancha.jpg",
-    category: "Cena",
-    prepTime: "25 min",
-  },
-];
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AddRecipeModal } from "@/components/AddRecipeModal";
+import { useAppContext } from "@/context/AppContext";
 
 export default function Recipes() {
+  const { state, dispatch } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
-  const [recipes] = useState(mockRecipes);
+  const [showNewRecipeForm, setShowNewRecipeForm] = useState(false);
 
-  const filteredRecipes = recipes.filter(recipe =>
+  const filteredRecipes = state.recipes.filter(recipe =>
     recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddNewRecipe = () => {
-    // Simulated add recipe functionality
-    alert("Funcionalidad para añadir nueva receta");
+  const getCategoryLabel = (category: 'breakfast' | 'lunch' | 'dinner') => {
+    const labels = {
+      breakfast: 'Desayuno',
+      lunch: 'Almuerzo',
+      dinner: 'Cena'
+    };
+    return labels[category];
+  };
+
+  const getCategoryColor = (category: 'breakfast' | 'lunch' | 'dinner') => {
+    const colors = {
+      breakfast: 'bg-yellow-100 text-yellow-800',
+      lunch: 'bg-green-100 text-green-800',
+      dinner: 'bg-purple-100 text-purple-800'
+    };
+    return colors[category];
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      {/* Header */}
-      <div className="bg-card shadow-soft">
-        <div className="px-6 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground mb-1">Mis Recetas</h1>
-              <p className="text-muted-foreground text-sm">
-                {filteredRecipes.length} recetas encontradas
-              </p>
-            </div>
-            <Button 
-              onClick={handleAddNewRecipe}
-              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-warm"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Añadir
-            </Button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Recetas</h1>
+          <p className="text-gray-600">Administra tus recetas favoritas de la familia</p>
+        </div>
 
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        {/* Search and Add Recipe */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              type="text"
               placeholder="Buscar recetas por nombre..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-muted/50 border-border focus:ring-primary focus:border-primary"
+              className="pl-10"
             />
           </div>
+          <Button 
+            onClick={() => setShowNewRecipeForm(true)}
+            className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Añadir Nueva Receta
+          </Button>
         </div>
-      </div>
 
-      {/* Recipes Grid */}
-      <div className="px-4 py-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {filteredRecipes.map((recipe) => (
-            <div
-              key={recipe.id}
-              className="bg-card rounded-xl shadow-card border border-border overflow-hidden hover:shadow-warm hover:scale-[1.02] transition-all duration-300 cursor-pointer group"
-            >
-              <div className="relative overflow-hidden">
-                <img
-                  src={recipe.image}
-                  alt={recipe.name}
-                  className="w-full h-40 object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                  {recipe.name}
+        {/* Recipes Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredRecipes.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search className="h-16 w-16 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No se encontraron recetas
                 </h3>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
-                      {recipe.category}
-                    </span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {recipe.prepTime}
-                  </span>
-                </div>
+                <p className="text-gray-500">
+                  {searchTerm ? 'Prueba con términos diferentes' : 'Comienza agregando tu primera receta'}
+                </p>
               </div>
+              {!searchTerm && (
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowNewRecipeForm(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear primera receta
+                </Button>
+              )}
             </div>
-          ))}
+          ) : (
+            filteredRecipes.map((recipe) => (
+              <Card 
+                key={recipe.id} 
+                className="group hover:shadow-lg transition-all duration-200 bg-white border-gray-200"
+              >
+                <div className="relative">
+                  {recipe.image && (
+                    <img
+                      src={recipe.image}
+                      alt={recipe.name}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
+                  )}
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white/90 hover:bg-white"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white/90 hover:bg-white text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-lg text-gray-900 line-clamp-2">
+                      {recipe.name}
+                    </h3>
+                  </div>
+                  <Badge className={`w-fit ${getCategoryColor(recipe.category)}`}>
+                    {getCategoryLabel(recipe.category)}
+                  </Badge>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      <span>{recipe.servings} porciones</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>~45 min</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Ingredientes principales:</h4>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {recipe.ingredients.slice(0, 3).map(ing => ing.name).join(', ')}
+                      {recipe.ingredients.length > 3 && '...'}
+                    </p>
+                  </div>
+
+                  {recipe.tags && recipe.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {recipe.tags.slice(0, 2).map((tag) => (
+                        <span 
+                          key={tag}
+                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {recipe.tags.length > 2 && (
+                        <span className="text-xs text-gray-400">
+                          +{recipe.tags.length - 2} más
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
-        {filteredRecipes.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-              <Search className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground text-lg mb-2">
-              No se encontraron recetas
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Intenta buscar con otros términos
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Floating Action Button for mobile */}
-      <div className="fixed bottom-24 right-6">
-        <Button
-          onClick={handleAddNewRecipe}
-          size="lg"
-          className="rounded-full w-14 h-14 shadow-warm bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 hover:scale-110 transition-all duration-300"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
+        {/* New Recipe Form Modal - Placeholder */}
+        <AddRecipeModal
+          isOpen={showNewRecipeForm}
+          onClose={() => setShowNewRecipeForm(false)}
+        />
       </div>
     </div>
   );

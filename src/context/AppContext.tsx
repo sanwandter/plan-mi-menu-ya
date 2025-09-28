@@ -244,15 +244,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData);
-        dispatch({ 
-          type: 'LOAD_INITIAL_DATA', 
-          payload: { 
-            recipes: parsedData.recipes || initialRecipes,
-            calendar: parsedData.calendar || {}
-          }
-        });
+        // Verificar si las rutas de imágenes son las correctas (sin hash de Vite)
+        const hasOldImagePaths = parsedData.recipes?.some((recipe: any) => 
+          recipe.image && (recipe.image.includes('-') && recipe.image.includes('.jpg'))
+        );
+        
+        if (hasOldImagePaths) {
+          // Si encuentra rutas antiguas, limpiar localStorage y usar datos iniciales
+          localStorage.removeItem('familyMenuApp');
+          dispatch({ 
+            type: 'LOAD_INITIAL_DATA', 
+            payload: { recipes: initialRecipes }
+          });
+        } else {
+          dispatch({ 
+            type: 'LOAD_INITIAL_DATA', 
+            payload: { 
+              recipes: parsedData.recipes || initialRecipes,
+              calendar: parsedData.calendar || {}
+            }
+          });
+        }
       } catch (error) {
         console.error('Error loading saved data:', error);
+        localStorage.removeItem('familyMenuApp');
         dispatch({ 
           type: 'LOAD_INITIAL_DATA', 
           payload: { recipes: initialRecipes }

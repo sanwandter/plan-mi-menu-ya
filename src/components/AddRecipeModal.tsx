@@ -307,7 +307,7 @@ export function AddRecipeModal({ isOpen, onClose, recipeToEdit }: AddRecipeModal
                     <Input
                       value={ingredient.unit}
                       onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                      placeholder="Unidad"
+                      placeholder="Ej: kg, ml, unidad"
                       required
                     />
                   </div>

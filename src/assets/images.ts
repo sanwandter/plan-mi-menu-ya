@@ -1,8 +1,16 @@
-// src/assets/images.ts
+// Import all recipe images using Vite's asset handling
+import lentejasVerduras from './lentejas-verduras.jpg';
+import tostadasPalta from './tostadas-palta.jpg';
+import polloHorno from './pollo-horno.jpg';
+import ensaladaFresca from './ensalada-fresca.jpg';
+import pancakesIntegrales from './pancakes-integrales.jpg';
+import salmonPlancha from './salmon-plancha.jpg';
 
-export const lentejasVerduras = '/images/lentejas-verduras.jpg';
-export const tostadasPalta = '/images/tostadas-palta.jpg';
-export const polloHorno = '/images/pollo-horno.jpg';
-export const ensaladaFresca = '/images/ensalada-fresca.jpg';
-export const pancakesIntegrales = '/images/pancakes-integrales.jpg';
-export const salmonPlancha = '/images/salmon-plancha.jpg';
+export {
+  lentejasVerduras,
+  tostadasPalta,
+  polloHorno,
+  ensaladaFresca,
+  pancakesIntegrales,
+  salmonPlancha
+};

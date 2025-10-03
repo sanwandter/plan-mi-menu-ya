@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAppContext } from "@/context/AppContext";
 import { IngredientCategory } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ShoppingList() {
   const { state, dispatch } = useAppContext();
+  const { toast } = useToast();
 
   // Agrupar los items por categoría
   const groupedItems = useMemo(() => {
@@ -74,7 +76,7 @@ export default function ShoppingList() {
     dispatch({ type: 'TOGGLE_SHOPPING_ITEM', payload: itemId });
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const uncheckedItems = state.shoppingList.filter(item => !item.checked);
     const checkedItems = state.shoppingList.filter(item => item.checked);
     
@@ -95,15 +97,22 @@ export default function ShoppingList() {
       });
     }
 
-    if (navigator.share) {
-      navigator.share({
-        title: 'Lista de Compras - Menú Familiar',
-        text: shareText
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast({
+        title: "¡Lista copiada!",
+        description: "La lista de compras se ha copiado al portapapeles",
+        variant: "success",
+        duration: 3000,
       });
-    } else {
-      navigator.clipboard.writeText(shareText);
-      // Mostrar un toast o mensaje de confirmación
-      alert('Lista copiada al portapapeles');
+    } catch (error) {
+      // Fallback si clipboard API no está disponible
+      toast({
+        title: "Error",
+        description: "No se pudo copiar la lista al portapapeles",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 
@@ -162,7 +171,7 @@ export default function ShoppingList() {
                     onClick={handleShare}
                   >
                     <Share2 className="h-4 w-4 mr-2" />
-                    Compartir
+                    Copiar Lista
                   </Button>
                 </div>
               </div>
